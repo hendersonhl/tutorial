@@ -1,0 +1,141 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww12200\viewh12540\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #### Steps 1 - 5\
+\
+# We need a subroutine for rewiring the graph\
+# Note: Make sure link (i, j) can also be read in as (j, i) (or shuffle order every draw)\
+Define function \'93rewire\'94 that takes a network as its argument:\
+    Initialize var to be true\
+    While var is true:\
+        Randomly select two links\
+        If rewiring leads to no self- or multi-edges:\
+            Proceed with rewiring\
+            Set var to be false\
+    Return rewired network\
+\
+# To find maximum or minimum assortativity coefficient\
+Define function \'93extreme_r\'94 that takes as arguments a network (ntw1), an indicator telling us whether \
+we are looking for a maximum or minimum (max_min), and some stopping criterion (stop):\
+    Initialize var to be true  \
+    Calculate assortativity coefficient r1 of network ntw1\
+    Initialize counter at zero\
+    While var is true:\
+        Execute rewire(ntw1) and store result as ntw2\
+        Calculate assortativity coefficient r2 of ntw2 \
+        If r1 = r2:\
+            Increment counter\
+            ntw1 = ntw2\
+            Set var to be false when counter reaches stop number of times through\
+        If r1 \'93max_min\'94 r2 then update:  # Note: \'93max_min\'94 just inputs > or <\
+            r1 = r2\
+            ntw1 = ntw2\
+            Reset counter to zero every time r1 and r2 are different\
+    Return max or min assortativity coefficient (both r1 and r2 will hold the maximum)\
+\
+# Call extreme_r repeatedly and return highest or lowest value as max or min\
+Define function \'93repeat_r\'94 that takes as arguments a network (ntw), an indicator telling us whether \
+we are looking for a maximum or minimum (max_min), stopping criterion (stop), and repetitions (reps):\
+    Initialize counter\
+    Create empty list lst\
+    While counter < reps:\
+        Execute extreme_r(ntw, max_min, stop)\
+        Add result to lst\
+        Increment counter\
+    Return maximum or minimum element in lst depending on how max_min is specified\
+\
+#### Steps 6 - 10\
+\
+# Find minimum or maximum clustering coefficient given a specified assortativity interval\
+Define function \'93extreme_c\'94 that takes as arguments a network (ntw1), the maximum and minimum \
+assortativity interval (max_r and min_r), an indicator telling us whether we are looking for a maximum \
+or minimum clustering coefficient (max_min), and some stopping criterion (stop):\
+    Calculate assortativity r1 and clustering c1 of ntw1\
+    Initialize var to be true\
+    Initialize counter at zero\
+    While var is true:\
+        Execute rewire(ntw1) and store result as ntw2\
+        Calculate assortativity r2 and clustering c2 of ntw2 \
+        If (r2 < min_r & r2 > r1) or (r2 >= max_r & r2 < r1) then update:\
+            r1 = r2\
+            c1 = c2\
+            ntw1 = ntw2\
+        If (min_r < r2 <= max_r) and (c1 \'93max_min\'94 c2) then update:\
+            r1 = r2\
+            c1 = c2\
+            ntw1 = ntw2\
+            Reset counter to zero every time c1 and c2 are different\
+        If (min_r < r2 < max_r) and (c1 = c2) then also update:\
+            Increment counter\
+            r1 = r2\
+            c1 = c2\
+            ntw1 = ntw2\
+            Set var to be false when counter reaches stop number of times through\
+   Return max or min clustering coefficient (both c1 and c2 will hold the maximum)\
+\
+# Call extreme_c repeatedly to return highest or lowest value as max or min\
+Define function \'93repeat_c\'94 that takes as arguments a network (ntw), the maximum and minimum assortativity \
+interval (max_r and min_r), an indicator telling us whether we are looking for a maximum or minimum clustering \
+coefficient (max_min), some stopping criterion (stop), and repetitions (reps):\
+    Initialize counter\
+    Create empty list lst\
+    While counter < reps:\
+        Execute extreme_c(ntw, max_r, min_r, max_min, stop)\
+        Add result to lst\
+        Increment counter\
+    Return maximum or minimum element in lst depending on how max_min is specified\
+\
+#### Steps 11 - 17\
+\
+# Need a subroutine that randomly walks in a given pixel to ensure more uniform sample\
+Define function \'93walk\'94 that takes as arguments a network (ntw1), pixel coordinates, and a stopping\
+criterion (stop):\
+    Calculate assortativity r1 and clustering c1 of ntw1\
+    Check to ensure r1 and c1 fall within the pixel coordinates\
+    Initialize counter\
+    While counter < stop:\
+        Execute rewire(ntw1) and store result as ntw2\
+        Calculate assortativity r2 and clustering c2 of ntw2\
+        If r2 and c2 fall within the pixel coordinates then update:\
+            ntw1 = ntw2\
+            Increment counter\
+    Return final network (ntw1 and ntw2 willl be the same)\
+\
+# Calculate statistics for each pixel \
+Define function \'93sampling\'94 that takes as arguments a network (ntw1), a list of valid pixels for that\
+network (pixels), and a stopping criterion (stop):\
+    Shuffle list of pixels\
+    Calculate assortativity r1 and clustering c1 of ntw1\
+    Calculate overall max and min r and c of pixels (this is used in the distance calculation)\
+    Initialize counter\
+    While counter < length of pixels:\
+        Calculate distance d1 of r1 and c1 from center of pixel with index of counter\
+        Execute rewire(ntw1) and store result as ntw2\
+        Calculate assortativity r2 and clustering c2 of ntw2 \
+        Calculate distance (d2) of r2 and c2 from center of pixel with index of counter\
+        If r2 and c2 are outside of current pixel and d2 < d1 then update:\
+            r1 = r2\
+            c1 = c2\
+            ntw1 = ntw2\
+        If r2 and c2 are inside of current pixel:\
+            Execute walk(ntw2, pixel coordinates, stop) and store result as ntw3\
+            Calculate and store necessary stats for ntw3\
+            Increment counter so we go to next pixel  # Need to worry about starting values for next pixel?\
+    Return vector of stats for each pixel\
+            \
+# The sampling function will get one draw for each pixel, but we want multiple.\
+Define function \'93repeat_s\'94 that takes as arguments a network (ntw), a list of valid pixels (pixels), a\
+stopping criterion (stop), and repetitions (reps):\
+    Initialize counter\
+    Create empty list (or matrix?) lst\
+    While counter < reps:\
+        Execute sampling(ntw, pixels, stop)\
+        Add result to lst\
+        Increment counter\
+    Return multiple reps of stats for each pixel\
+\
+}
